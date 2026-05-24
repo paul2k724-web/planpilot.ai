@@ -1,6 +1,7 @@
 import React from "react";
 import { Menu, Moon, Search, Settings, Sun, User } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/app/redux";
 import { setIsDarkMode, setIsSidebarCollapsed } from "@/state";
 import { useGetAuthUserQuery } from "@/state/api";
@@ -9,13 +10,24 @@ import Image from "next/image";
 
 const Navbar = () => {
   const dispatch = useAppDispatch();
+  const router = useRouter();
   const isSidebarCollapsed = useAppSelector(
     (state) => state.global.isSidebarCollapsed,
   );
   const isDarkMode = useAppSelector((state) => state.global.isDarkMode);
 
   const { data: currentUser } = useGetAuthUserQuery({});
+  
+  const hasCognitoConfig =
+    Boolean(process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID) &&
+    Boolean(process.env.NEXT_PUBLIC_COGNITO_USER_POOL_CLIENT_ID);
+
   const handleSignOut = async () => {
+    if (!hasCognitoConfig) {
+      sessionStorage.removeItem("planpilot_demo_session");
+      router.push("/");
+      return;
+    }
     try {
       await signOut();
     } catch (error) {
@@ -29,7 +41,7 @@ const Navbar = () => {
   return (
     <div className="flex items-center justify-between bg-white px-4 py-3 dark:bg-black">
       {/* Search Bar */}
-      <div className="flex items-center gap-8">
+      <div className="flex items-center gap-4 sm:gap-8">
         {!isSidebarCollapsed ? null : (
           <button
             onClick={() => dispatch(setIsSidebarCollapsed(!isSidebarCollapsed))}
@@ -43,8 +55,15 @@ const Navbar = () => {
             className="w-full rounded border-none bg-gray-100 p-2 pl-8 placeholder-gray-500 focus:border-transparent focus:outline-none dark:bg-gray-700 dark:text-white dark:placeholder-white"
             type="search"
             placeholder="Search..."
+            onFocus={() => router.push("/search")}
           />
         </div>
+        {!hasCognitoConfig && (
+          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            Demo Mode
+          </span>
+        )}
       </div>
 
       {/* Icons */}

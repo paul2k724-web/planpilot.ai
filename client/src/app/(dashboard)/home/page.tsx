@@ -8,7 +8,7 @@ import {
   useGetProjectsQuery,
   useGetTasksQuery,
 } from "@/state/api";
-import { useAppSelector } from "../redux";
+import { useAppSelector } from "../../redux";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import {
   AlertTriangle,
@@ -95,7 +95,29 @@ const HomePage = () => {
   }
 
   if (tasksError || !projects) {
-    return <div className="p-8">Error fetching dashboard data.</div>;
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 px-8 dark:bg-dark-bg">
+        <div className="max-w-md rounded-md border border-rose-200 bg-white p-8 text-center shadow-sm dark:border-stroke-dark dark:bg-dark-secondary">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-md bg-rose-100 dark:bg-rose-950">
+            <AlertTriangle className="h-6 w-6 text-rose-600 dark:text-rose-400" />
+          </div>
+          <h2 className="text-lg font-black text-slate-900 dark:text-white">
+            Could not load dashboard
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+            The backend may not be running. Start the server with{" "}
+            <code className="rounded bg-slate-100 px-1 py-0.5 font-mono text-xs dark:bg-dark-tertiary">
+              npm run dev
+            </code>{" "}
+            in the{" "}
+            <code className="rounded bg-slate-100 px-1 py-0.5 font-mono text-xs dark:bg-dark-tertiary">
+              server
+            </code>{" "}
+            directory, then refresh.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   if (!projects.length) {

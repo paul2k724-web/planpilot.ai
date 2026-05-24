@@ -63,3 +63,19 @@ body,
   width: 0px;
   height: 0px;
 }
+
+/* TOAST ANIMATION */
+@keyframes toast-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(1.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.toast-slide-in {
+  animation: toast-slide-in 0.2s ease-out forwards;
+}

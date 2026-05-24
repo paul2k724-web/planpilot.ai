@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Sidebar from "@/components/Sidebar";
 import AuthProvider from "./authProvider";
@@ -8,10 +9,25 @@ import StoreProvider, { useAppSelector } from "./redux";
 import ToastProvider from "@/components/ToastProvider";
 
 const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
+  const router = useRouter();
   const isSidebarCollapsed = useAppSelector(
     (state) => state.global.isSidebarCollapsed,
   );
   const isDarkMode = useAppSelector((state) => state.global.isDarkMode);
+
+  // Check demo session state if Cognito is not configured
+  useEffect(() => {
+    const hasCognitoConfig =
+      Boolean(process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID) &&
+      Boolean(process.env.NEXT_PUBLIC_COGNITO_USER_POOL_CLIENT_ID);
+    
+    if (!hasCognitoConfig) {
+      const session = sessionStorage.getItem("planpilot_demo_session");
+      if (!session) {
+        router.replace("/");
+      }
+    }
+  }, [router]);
 
   useEffect(() => {
     if (isDarkMode) {

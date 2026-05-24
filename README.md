@@ -1,78 +1,97 @@
 # PlanPilot AI
 
-AI-powered project delivery dashboard built for recruiter demos, sprint planning,
-risk visibility, and team execution.
+> AI-powered project delivery dashboard built for recruiter demos, sprint planning, risk visibility, and team execution — no AWS, no paid AI subscription required.
 
-PlanPilot AI turns a standard project management dashboard into a portfolio-grade
-product: teams can manage projects and tasks, review timelines, search work,
-track health signals, and generate sprint plans through a built-in AI-style
-Copilot that works without AWS or a paid AI subscription.
+---
 
-## Highlights
+## Features
 
-- AI Sprint Copilot with sprint generation, task estimates, risk notes, and one-click board task creation
-- AI-style planning engine that runs locally without paid model APIs
-- Demo mode that runs without AWS Cognito when Cognito env vars are not provided
-- Project dashboard with health score, completion rate, urgent work, overdue work, charts, and execution queue
-- Project boards with Kanban drag-and-drop, list, table, and timeline views
-- Full-stack architecture with Next.js, Express, Prisma, PostgreSQL, Redux Toolkit Query, Tailwind CSS, and MUI Data Grid
-- Free-demo friendly deployment path using Vercel, Render, and Neon/PostgreSQL
+| Feature | Details |
+|---------|---------|
+| 🤖 **AI Sprint Copilot** | Generates recruiter-ready sprint plans with phase labels, story point estimates, risk scores, and a health summary |
+| 📊 **Project Dashboard** | Health score, completion rate, urgent task count, overdue signals, bar chart, pie chart, and execution queue |
+| 🗂 **Kanban Board** | Drag-and-drop task management with status columns |
+| 📋 **List & Table Views** | Alternative project views for different workflows |
+| 📅 **Timeline View** | Gantt-style timeline for delivery visibility |
+| 🔍 **Global Search** | Full-text search across tasks, projects, and users |
+| 🌙 **Dark Mode** | System-aware dark mode with consistent design tokens |
+| 🔒 **Demo Mode** | Runs fully without AWS Cognito — seeded demo data, no setup required |
+| 🆓 **Free Deployment** | Designed for Vercel + Render + Neon (all free tier) |
 
-## Demo Architecture
+---
+
+## Architecture
 
 ```mermaid
 flowchart LR
-  User["Recruiter / Demo User"] --> Client["Next.js Client on Vercel"]
-  Client --> API["Express API on Render"]
-  API --> DB["PostgreSQL on Neon"]
-  API --> Copilot["Local AI Planning Engine"]
+  User["Recruiter / Demo User"] --> Client["Next.js Client\nVercel"]
+  Client --> API["Express API\nRender"]
+  API --> DB["PostgreSQL\nNeon (optional)"]
+  API --> Copilot["Local AI Planning Engine\n(no paid API needed)"]
 ```
+
+**Stack:**
+- **Frontend**: Next.js 14, TypeScript, Tailwind CSS, Redux Toolkit Query, MUI Data Grid, Recharts
+- **Backend**: Node.js, Express, TypeScript, Prisma ORM
+- **Database**: PostgreSQL (Neon) — *optional in demo mode*
+- **Auth**: AWS Cognito — *optional, bypassed in demo mode*
+- **Testing**: Node built-in test runner + Supertest (backend), Playwright (E2E)
+
+---
+
+## Demo Mode
+
+Demo mode lets recruiters run the full app with zero infrastructure setup:
+
+- Leave **both** Cognito env vars blank in the client — auth is bypassed entirely
+- Leave `DATABASE_URL` blank in the server (or set `DEMO_MODE=true`) — the backend uses seeded in-memory data
+- The AI Copilot always works regardless of demo mode (it's a local planning engine, not an external API)
+- All CRUD operations work in memory during the session
+
+---
 
 ## Local Setup
 
-Install dependencies:
+**Requirements:** Node.js ≥ 18
+
+### 1. Install dependencies
 
 ```bash
-cd client
-npm ci
-
-cd ../server
-npm ci
+cd client && npm ci
+cd ../server && npm ci
 ```
 
-Create server env:
+### 2. Configure the server
 
 ```bash
 cd server
 cp .env.example .env
 ```
 
-Set:
+For demo mode (no database), the defaults work as-is. For a real database, set `DATABASE_URL`.
 
-```env
-PORT=8000
-DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE?schema=public"
-CORS_ORIGIN=http://localhost:3000
-```
-
-Create client env:
+### 3. Configure the client
 
 ```bash
 cd client
 cp .env.example .env.local
 ```
 
-Set:
+For demo mode, leave the Cognito values blank. Set `NEXT_PUBLIC_API_BASE_URL=http://localhost:8000`.
 
-```env
-NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
-NEXT_PUBLIC_COGNITO_USER_POOL_ID=
-NEXT_PUBLIC_COGNITO_USER_POOL_CLIENT_ID=
+### 4. Run locally
+
+```bash
+# Terminal 1 — backend
+cd server && npm run dev
+
+# Terminal 2 — frontend
+cd client && npm run dev
 ```
 
-Leaving Cognito values blank enables demo mode.
+Open [http://localhost:3000](http://localhost:3000).
 
-Prepare database when you want PostgreSQL persistence:
+### 5. (Optional) Set up a real database
 
 ```bash
 cd server
@@ -81,104 +100,148 @@ npx prisma migrate deploy
 npm run seed
 ```
 
-Run locally:
+---
 
-```bash
-cd server
-npm run dev
+## Deployment Guide
 
-cd ../client
-npm run dev
-```
+### Frontend → Vercel
 
-Open `http://localhost:3000`.
+1. Connect your GitHub repo on [vercel.com](https://vercel.com)
+2. Set root directory to `client`
+3. Add environment variables:
+   ```env
+   NEXT_PUBLIC_API_BASE_URL=https://your-render-api.onrender.com
+   NEXT_PUBLIC_COGNITO_USER_POOL_ID=
+   NEXT_PUBLIC_COGNITO_USER_POOL_CLIENT_ID=
+   ```
+4. Deploy — Vercel auto-detects Next.js
 
-For a no-database demo, run the server without `DATABASE_URL`. The backend uses
-seeded in-memory data and the AI Copilot still works.
+### Backend → Render
 
-## Demo Mode
+1. Create a new **Web Service** on [render.com](https://render.com)
+2. Set root directory to `server`
+3. Build command: `npm install && npm run build`
+4. Start command: `node dist/src/index.js`
+5. Add environment variables:
+   ```env
+   PORT=8000
+   NODE_ENV=production
+   CORS_ORIGIN=https://your-vercel-app.vercel.app
+   # Leave DATABASE_URL blank for demo mode, or set a Neon URL for persistence
+   DATABASE_URL=
+   DEMO_MODE=true
+   ```
 
-Demo mode lets recruiters run the app without AWS and without a database.
+### Database → Neon (optional)
 
-- Leave Cognito variables blank in the client.
-- Omit `DATABASE_URL` or set `DEMO_MODE=true` in the server.
-- The backend uses seeded in-memory data and stays fully functional.
+1. Create a free database on [neon.tech](https://neon.tech)
+2. Copy the connection string to `DATABASE_URL` in Render
+3. Run migrations via the Render shell: `npx prisma migrate deploy && npm run seed`
 
-## Deployment Without AWS
-
-Recommended student-friendly deployment:
-
-- Frontend: Vercel
-- Backend: Render
-- Database: Neon PostgreSQL
-
-Set these environment variables in production:
-
-Server:
-
-```env
-PORT=8000
-DATABASE_URL="your-neon-postgres-url"
-CORS_ORIGIN=https://your-vercel-app.vercel.app
-```
-
-Client:
-
-```env
-NEXT_PUBLIC_API_BASE_URL=https://your-render-api.onrender.com
-NEXT_PUBLIC_COGNITO_USER_POOL_ID=
-NEXT_PUBLIC_COGNITO_USER_POOL_CLIENT_ID=
-```
+---
 
 ## Testing
 
-Backend route tests:
+### Backend unit + integration tests
 
 ```bash
 cd server
 npm test
 ```
 
-Playwright smoke test (requires backend + frontend running):
+Runs 3 test files with 7 tests covering:
+- `GET /projects` and `POST /projects`
+- `GET /tasks`, `POST /tasks`, and round-trip verification
+- `POST /ai/sprint-plan` — happy path, validation, healthSummary, phaseLabel, 400 rejection
+
+### Playwright E2E smoke test
+
+Requires both backend and frontend running locally:
 
 ```bash
-cd server
-npm run dev
+# Terminal 1
+cd server && npm run dev
 
-cd ../client
-npm run dev
-npm run test:e2e
+# Terminal 2
+cd client && npm run dev
+
+# Terminal 3
+cd client && npm run test:e2e
 ```
 
-## Resume Pitch
+Covers: dashboard load → navigate to Copilot → generate plan → verify health summary → create tasks → open project board.
 
-Built PlanPilot AI, a full-stack AI-powered project delivery dashboard using
-Next.js, Node.js, Express, Prisma, PostgreSQL, Tailwind CSS, Redux Toolkit Query,
-and MUI Data Grid. Implemented Kanban task management, project analytics,
-timeline views, search, demo-mode authentication, and an AI Sprint Copilot that
-generates sprint plans, risk scores, task estimates, and board-ready execution
-items.
-
-## Portfolio Assets
-
-- Live demo: add your deployed URL here
-- Demo video (60-90s): add your Loom or YouTube link here
-- Screenshots: add `./screenshots/dashboard.png`, `./screenshots/copilot.png`, `./screenshots/board.png`
-- Architecture diagram: use the Mermaid diagram above or replace it with an exported PNG
-
-## Security Notes
-
-`npm audit fix` was run for non-breaking updates. Remaining advisories are in
-transitive dependencies tied to Next.js or AWS Amplify. If you want to clear
-them fully, review `npm audit fix --force` and test build output before adopting.
-
-## Verification
-
-Current verified commands:
+### Build verification
 
 ```bash
 cd server && npm run build
 cd client && npm run build
 ```
 
-Both production builds pass.
+Both production builds pass cleanly.
+
+---
+
+## Resume Bullets
+
+```
+• Built PlanPilot AI, a full-stack AI-powered project management dashboard using
+  Next.js 14, Node.js/Express, Prisma ORM, PostgreSQL, Redux Toolkit Query,
+  Tailwind CSS, and MUI Data Grid
+
+• Implemented an AI Sprint Copilot (no paid API) that generates sprint plans with
+  phase labels, story point estimates, risk scores, and health summaries — converting
+  plans into live Kanban board tasks in one click
+
+• Shipped 4 project views (Kanban, List, Table, Gantt timeline), global search,
+  dark mode, toast notifications, loading skeletons, and mobile-responsive layout
+
+• Designed a demo mode that bypasses AWS Cognito and PostgreSQL entirely via seeded
+  in-memory data — recruiter can open the live demo instantly with zero setup
+
+• Wrote 7 backend integration tests (Node test runner + Supertest) and a Playwright
+  E2E smoke test covering the full dashboard-to-copilot task creation flow
+
+• Deployed to Vercel (frontend) + Render (backend) using a free-tier stack with
+  optional Neon PostgreSQL; CORS, Helmet, and env-based configuration production-ready
+```
+
+---
+
+## Screenshots
+
+> Add your screenshots after deploying:
+
+```
+./screenshots/dashboard.png    — Dashboard with analytics and execution queue
+./screenshots/copilot.png      — AI Sprint Copilot with health summary and task cards
+./screenshots/board.png        — Kanban board with drag-and-drop columns
+./screenshots/timeline.png     — Gantt timeline view
+```
+
+---
+
+## Portfolio Assets
+
+- **Live demo**: *(add your Vercel URL)*
+- **Demo video (60–90 s)**: *(add your Loom or YouTube link)*
+- **Architecture diagram**: See Mermaid diagram above
+
+---
+
+## Security Notes
+
+- `npm audit fix` was run for non-breaking updates in both `client` and `server`
+- Remaining advisories are in transitive dependencies tied to Next.js and AWS Amplify
+- Review `npm audit` output before running `--force` and always test the build after
+
+---
+
+## Known Limitations
+
+| Limitation | Notes |
+|-----------|-------|
+| In-memory demo data resets on server restart | By design — use PostgreSQL for persistence |
+| AI Copilot uses template-based planning, not an LLM | Intentional — keeps it free and demo-safe |
+| AWS Cognito auth not wired in demo mode | Remove Amplify dependency if you never plan to use Cognito |
+| Playwright tests require local dev servers | Not yet in CI — see testing section |

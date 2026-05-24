@@ -7,6 +7,8 @@ type SprintPlanRequest = {
   projectName?: string;
 };
 
+type PhaseLabel = "Discovery" | "Execution" | "Launch";
+
 type PlannedTask = {
   title: string;
   description: string;
@@ -15,6 +17,7 @@ type PlannedTask = {
   points: number;
   tags: string;
   risk: string;
+  phaseLabel: PhaseLabel;
 };
 
 const discoveryTemplates = [
@@ -61,30 +64,40 @@ const createTasks = (goal: string): PlannedTask[] => {
     ...launchTemplates,
   ];
 
-  return templates.map((template, index) => ({
-    title: `${template} for ${goal}`,
-    description:
-      index < 3
-        ? `Turn the goal into a clear delivery plan: ${goal}. Capture assumptions, constraints, and the final demo outcome.`
-        : index < 7
-          ? `Implement the most visible working slice for: ${goal}. Keep it demo-friendly, measurable, and easy to explain.`
-          : `Polish and prove the work for: ${goal}. The output should be stable enough for a live recruiter walkthrough.`,
-    priority: getPriority(index),
-    status: "To Do",
-    points: estimatePoints(template, index),
-    tags:
-      index < 3
-        ? "planning,scope,requirements"
-        : index < 7
-          ? "build,product,delivery"
-          : "qa,launch,portfolio",
-    risk:
-      index < 2
-        ? "High leverage item. If this is vague, the sprint will drift."
-        : index < 7
-          ? "Medium risk. Keep the slice small and demoable."
-          : "Low risk, but it decides how professional the project feels.",
-  }));
+  return templates.map((template, index) => {
+    const phaseLabel: PhaseLabel =
+      index < discoveryTemplates.length
+        ? "Discovery"
+        : index < discoveryTemplates.length + executionTemplates.length
+          ? "Execution"
+          : "Launch";
+
+    return {
+      title: `${template} for ${goal}`,
+      description:
+        index < 3
+          ? `Turn the goal into a clear delivery plan: ${goal}. Capture assumptions, constraints, and the final demo outcome.`
+          : index < 7
+            ? `Implement the most visible working slice for: ${goal}. Keep it demo-friendly, measurable, and easy to explain.`
+            : `Polish and prove the work for: ${goal}. The output should be stable enough for a live recruiter walkthrough.`,
+      priority: getPriority(index),
+      status: "To Do" as const,
+      points: estimatePoints(template, index),
+      tags:
+        index < 3
+          ? "planning,scope,requirements"
+          : index < 7
+            ? "build,product,delivery"
+            : "qa,launch,portfolio",
+      risk:
+        index < 2
+          ? "High leverage item. If this is vague, the sprint will drift."
+          : index < 7
+            ? "Medium risk. Keep the slice small and demoable."
+            : "Low risk, but it decides how professional the project feels.",
+      phaseLabel,
+    };
+  });
 };
 
 export const generateSprintPlan = async (
@@ -108,6 +121,19 @@ export const generateSprintPlan = async (
   const capacity = Math.max(1, teamSize) * 30;
   const riskScore = Math.min(96, Math.round((totalPoints / capacity) * 35));
 
+  const riskLevel: "Low" | "Medium" | "High" =
+    riskScore > 75 ? "High" : riskScore > 50 ? "Medium" : "Low";
+
+  const healthSummary = {
+    riskLevel,
+    insight:
+      riskLevel === "High"
+        ? `${totalPoints} story points across ${tasks.length} tasks exceeds comfortable capacity for ${teamSize} person${teamSize === 1 ? "" : "s"} in ${timeline}. Trim scope or extend the timeline.`
+        : riskLevel === "Medium"
+          ? `${totalPoints} story points is manageable for ${teamSize} person${teamSize === 1 ? "" : "s"} in ${timeline} with tight daily execution. Protect the first two discovery items.`
+          : `${totalPoints} story points fits comfortably within a ${timeline} sprint for ${teamSize} person${teamSize === 1 ? "" : "s"}. Focus on polish and demo quality.`,
+  };
+
   res.json({
     projectName,
     summary: `${projectName} can be shaped into a recruiter-ready sprint in ${timeline} by focusing on the highest-visibility workflow first, then proving it with clean UX and demo data.`,
@@ -118,6 +144,7 @@ export const generateSprintPlan = async (
         : riskScore > 50
           ? "Challenging but realistic with tight execution."
           : "Healthy scope for a focused portfolio sprint.",
+    healthSummary,
     recommendations: [
       "Keep one AI workflow polished end-to-end instead of adding many shallow AI buttons.",
       "Use demo mode and free deployment services so the recruiter can open the project instantly.",

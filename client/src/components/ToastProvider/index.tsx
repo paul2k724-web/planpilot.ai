@@ -55,13 +55,13 @@ const ToastProvider = ({ children }: { children: React.ReactNode }) => {
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <div className="pointer-events-none fixed right-4 top-20 z-[80] flex max-w-sm flex-col gap-2">
+      <div className="pointer-events-none fixed right-4 top-16 z-[80] flex max-w-sm flex-col gap-2">
         {toasts.map((toast) => {
           const Icon = toneIcons[toast.tone];
           return (
             <div
               key={toast.id}
-              className={`pointer-events-auto flex items-start gap-3 rounded-md border px-3 py-3 text-sm font-semibold shadow-sm ${toneStyles[toast.tone]}`}
+              className={`toast-slide-in pointer-events-auto flex items-start gap-3 rounded-md border px-3 py-3 text-sm font-semibold shadow-md ${toneStyles[toast.tone]}`}
             >
               <Icon className="mt-0.5 h-4 w-4 flex-none" />
               <p className="leading-5">{toast.message}</p>

@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import React, { useState } from "react";
 
 const Sidebar = () => {
@@ -34,12 +34,22 @@ const Sidebar = () => {
 
   const { data: projects } = useGetProjectsQuery();
   const dispatch = useAppDispatch();
+  const router = useRouter();
   const isSidebarCollapsed = useAppSelector(
     (state) => state.global.isSidebarCollapsed,
   );
 
   const { data: currentUser } = useGetAuthUserQuery({});
+  const hasCognitoConfig =
+    Boolean(process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID) &&
+    Boolean(process.env.NEXT_PUBLIC_COGNITO_USER_POOL_CLIENT_ID);
+
   const handleSignOut = async () => {
+    if (!hasCognitoConfig) {
+      sessionStorage.removeItem("planpilot_demo_session");
+      router.push("/");
+      return;
+    }
     try {
       await signOut();
     } catch (error) {
@@ -55,7 +65,15 @@ const Sidebar = () => {
   `;
 
   return (
-    <div className={sidebarClassNames}>
+    <>
+      {/* Backdrop for mobile */}
+      {!isSidebarCollapsed && (
+        <div
+          className="fixed inset-0 z-30 bg-black/40 md:hidden"
+          onClick={() => dispatch(setIsSidebarCollapsed(true))}
+        />
+      )}
+      <div className={sidebarClassNames}>
       <div className="flex h-[100%] w-full flex-col justify-start">
         {/* TOP LOGO */}
         <div className="z-50 flex min-h-[56px] w-64 items-center justify-between bg-white px-6 pt-3 dark:bg-black">
@@ -190,6 +208,7 @@ const Sidebar = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 
@@ -202,7 +221,9 @@ interface SidebarLinkProps {
 const SidebarLink = ({ href, icon: Icon, label }: SidebarLinkProps) => {
   const pathname = usePathname();
   const isActive =
-    pathname === href || (pathname === "/" && href === "/dashboard");
+    pathname === href ||
+    (pathname === "/" && href === "/") ||
+    (pathname.startsWith("/home") && href === "/home");
 
   return (
     <Link href={href} className="w-full">

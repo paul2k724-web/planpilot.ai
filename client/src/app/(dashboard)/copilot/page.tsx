@@ -16,6 +16,9 @@ import {
   CheckCircle2,
   Gauge,
   Loader2,
+  ShieldCheck,
+  ShieldAlert,
+  ShieldX,
   Sparkles,
   Wand2,
 } from "lucide-react";
@@ -38,6 +41,31 @@ const priorityStyles: Record<Priority, string> = {
   Medium: "border-emerald-200 bg-emerald-50 text-emerald-700",
   Low: "border-sky-200 bg-sky-50 text-sky-700",
   Backlog: "border-slate-200 bg-slate-50 text-slate-700",
+};
+
+const phaseStyles: Record<string, string> = {
+  Discovery: "bg-violet-100 text-violet-700 border-violet-200",
+  Execution: "bg-blue-100 text-blue-700 border-blue-200",
+  Launch: "bg-emerald-100 text-emerald-700 border-emerald-200",
+};
+
+const riskCardStyles: Record<string, string> = {
+  Low: "border-emerald-200 bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200 dark:border-emerald-800",
+  Medium:
+    "border-amber-200 bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-200 dark:border-amber-800",
+  High: "border-rose-200 bg-rose-50 text-rose-800 dark:bg-rose-950 dark:text-rose-200 dark:border-rose-800",
+};
+
+const riskBarColor: Record<string, string> = {
+  Low: "bg-emerald-500",
+  Medium: "bg-amber-500",
+  High: "bg-rose-500",
+};
+
+const riskIcon: Record<string, React.ElementType> = {
+  Low: ShieldCheck,
+  Medium: ShieldAlert,
+  High: ShieldX,
 };
 
 const CopilotPage = () => {
@@ -103,17 +131,24 @@ const CopilotPage = () => {
 
       setCreatedCount(count);
       success(
-        `Tasks created: ${count} added to ${selectedProject?.name || "your project"}.`
+        `${count} tasks added to ${selectedProject?.name || "your project"}.`,
       );
     } catch (createErr) {
       setCreateError("Task creation failed. Please try again.");
-      toastError("Task creation failed. Please check the backend and try again.");
+      toastError(
+        "Task creation failed. Check that the backend is running.",
+      );
     }
   };
+
+  const RiskIcon = plan?.healthSummary
+    ? riskIcon[plan.healthSummary.riskLevel] ?? ShieldCheck
+    : ShieldCheck;
 
   return (
     <div className="min-h-screen bg-slate-50 px-5 py-6 text-slate-950 dark:bg-dark-bg dark:text-white sm:px-8">
       <div className="mx-auto flex max-w-7xl flex-col gap-6">
+        {/* PAGE HEADER */}
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
@@ -135,6 +170,7 @@ const CopilotPage = () => {
         </div>
 
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-[420px_minmax(0,1fr)]">
+          {/* LEFT PANEL — FORM */}
           <section className="rounded-md border border-slate-200 bg-white p-5 shadow-sm dark:border-stroke-dark dark:bg-dark-secondary">
             <div className="mb-5 flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-950 text-white dark:bg-white dark:text-slate-950">
@@ -206,8 +242,8 @@ const CopilotPage = () => {
               </select>
               {!projects?.length ? (
                 <p className="mt-2 text-xs text-slate-500">
-                  No projects yet. Create one in the Projects tab to enable board
-                  task creation.
+                  No projects yet. Create one in the Projects tab to enable
+                  board task creation.
                 </p>
               ) : null}
             </div>
@@ -228,7 +264,8 @@ const CopilotPage = () => {
             {error && (
               <div className="mt-4 flex gap-2 rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
                 <AlertTriangle className="h-5 w-5 flex-none" />
-                The copilot could not generate a plan. Check that the backend is running.
+                The copilot could not generate a plan. Check that the backend is
+                running.
               </div>
             )}
             {createError && (
@@ -239,11 +276,15 @@ const CopilotPage = () => {
             )}
           </section>
 
+          {/* RIGHT PANEL — RESULTS */}
           <section className="rounded-md border border-slate-200 bg-white p-5 shadow-sm dark:border-stroke-dark dark:bg-dark-secondary">
-            {!plan ? (
+            {isLoading ? (
+              <GeneratingSkeleton />
+            ) : !plan ? (
               <EmptyState />
             ) : (
               <div className="flex flex-col gap-5">
+                {/* PLAN HEADER */}
                 <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 dark:border-stroke-dark lg:flex-row lg:items-start lg:justify-between">
                   <div>
                     <h2 className="text-xl font-black">{plan.projectName}</h2>
@@ -257,7 +298,7 @@ const CopilotPage = () => {
                   <button
                     onClick={handleCreateTasks}
                     disabled={!selectedProjectId || isCreatingTasks}
-                    className="flex items-center justify-center gap-2 rounded-md bg-emerald-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex shrink-0 items-center justify-center gap-2 rounded-md bg-emerald-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {isCreatingTasks ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -268,21 +309,44 @@ const CopilotPage = () => {
                   </button>
                 </div>
 
+                {/* SUCCESS STATE */}
                 {createdCount > 0 && (
-                  <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm font-semibold text-emerald-700">
-                    Created {createdCount} tasks in {selectedProject?.name}.
-                    <div className="mt-2 text-xs font-semibold">
+                  <div className="rounded-md border border-emerald-300 bg-emerald-50 p-4 dark:border-emerald-800 dark:bg-emerald-950">
+                    <div className="flex items-center gap-3">
+                      <CheckCircle2 className="h-5 w-5 flex-none text-emerald-600 dark:text-emerald-400" />
+                      <div>
+                        <p className="text-sm font-bold text-emerald-800 dark:text-emerald-200">
+                          {createdCount} tasks created in{" "}
+                          {selectedProject?.name}
+                        </p>
+                        <p className="mt-0.5 text-xs text-emerald-700 dark:text-emerald-300">
+                          Open the project board to review, assign, and drag
+                          tasks across the Kanban columns.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-3">
                       <Link
                         href={`/projects/${selectedProjectId}`}
-                        className="inline-flex items-center gap-2 text-emerald-700 underline"
+                        className="inline-flex items-center gap-2 rounded-md bg-emerald-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-emerald-700"
                       >
                         Open project board
-                        <ArrowRight className="h-4 w-4" />
+                        <ArrowRight className="h-3.5 w-3.5" />
                       </Link>
                     </div>
                   </div>
                 )}
 
+                {/* HEALTH SUMMARY */}
+                {plan.healthSummary && (
+                  <HealthSummaryPanel
+                    riskLevel={plan.healthSummary.riskLevel}
+                    insight={plan.healthSummary.insight}
+                    riskScore={plan.riskScore}
+                  />
+                )}
+
+                {/* RECOMMENDATIONS */}
                 <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
                   {plan.recommendations.map((recommendation) => (
                     <div
@@ -294,6 +358,7 @@ const CopilotPage = () => {
                   ))}
                 </div>
 
+                {/* TASK CARDS */}
                 <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
                   {plan.tasks.map((task, index) => (
                     <TaskPlanCard key={`${task.title}-${index}`} task={task} />
@@ -308,6 +373,8 @@ const CopilotPage = () => {
   );
 };
 
+/* ─── Sub-components ────────────────────────────────────────────────────── */
+
 const EmptyState = () => (
   <div className="flex min-h-[520px] flex-col items-center justify-center rounded-md border border-dashed border-slate-300 bg-slate-50 p-8 text-center dark:border-stroke-dark dark:bg-dark-tertiary">
     <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-md bg-slate-950 text-white dark:bg-white dark:text-slate-950">
@@ -315,11 +382,62 @@ const EmptyState = () => (
     </div>
     <h2 className="text-xl font-black">Ready to plan the sprint.</h2>
     <p className="mt-2 max-w-md text-sm leading-6 text-slate-600 dark:text-slate-300">
-      The generated plan will appear here with risk, priorities, estimates, and
-      board-ready tasks.
+      The generated plan will appear here with risk analysis, phase labels,
+      story point estimates, and board-ready tasks.
     </p>
   </div>
 );
+
+const GeneratingSkeleton = () => (
+  <div className="flex min-h-[520px] flex-col gap-4 p-2">
+    <div className="h-6 w-48 animate-pulse rounded bg-slate-200 dark:bg-dark-tertiary" />
+    <div className="h-4 w-full animate-pulse rounded bg-slate-100 dark:bg-dark-tertiary" />
+    <div className="h-4 w-3/4 animate-pulse rounded bg-slate-100 dark:bg-dark-tertiary" />
+    <div className="mt-4 h-20 w-full animate-pulse rounded-md bg-slate-100 dark:bg-dark-tertiary" />
+    <div className="grid grid-cols-2 gap-3">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div
+          key={`skel-${i}`}
+          className="h-32 animate-pulse rounded-md bg-slate-100 dark:bg-dark-tertiary"
+        />
+      ))}
+    </div>
+  </div>
+);
+
+const HealthSummaryPanel = ({
+  riskLevel,
+  insight,
+  riskScore,
+}: {
+  riskLevel: "Low" | "Medium" | "High";
+  insight: string;
+  riskScore: number;
+}) => {
+  const Icon = riskIcon[riskLevel];
+  return (
+    <div
+      className={`rounded-md border p-4 ${riskCardStyles[riskLevel]}`}
+      aria-label="Health summary panel"
+    >
+      <div className="mb-3 flex items-center gap-2">
+        <Icon className="h-5 w-5 flex-none" />
+        <span className="text-sm font-bold">
+          Sprint Health — {riskLevel} Risk
+        </span>
+        <span className="ml-auto text-xs font-bold">{riskScore}%</span>
+      </div>
+      {/* Risk bar */}
+      <div className="mb-3 h-1.5 w-full overflow-hidden rounded-full bg-black/10 dark:bg-white/10">
+        <div
+          className={`h-full rounded-full transition-all ${riskBarColor[riskLevel]}`}
+          style={{ width: `${riskScore}%` }}
+        />
+      </div>
+      <p className="text-xs leading-5">{insight}</p>
+    </div>
+  );
+};
 
 const Metric = ({
   icon: Icon,
@@ -339,26 +457,52 @@ const Metric = ({
   </div>
 );
 
-const TaskPlanCard = ({ task }: { task: PlannedTask }) => (
-  <article className="rounded-md border border-slate-200 p-4 transition hover:border-slate-300 hover:shadow-sm dark:border-stroke-dark dark:hover:border-slate-600">
-    <div className="mb-3 flex flex-wrap items-center gap-2">
-      <span
-        className={`rounded-full border px-2 py-1 text-xs font-bold ${priorityStyles[task.priority]}`}
+const TaskPlanCard = ({ task }: { task: PlannedTask }) => {
+  const isHighRisk = task.risk.toLowerCase().includes("high");
+
+  return (
+    <article
+      className={`rounded-md border p-4 transition hover:shadow-sm ${
+        isHighRisk
+          ? "border-rose-200 hover:border-rose-300 dark:border-rose-900"
+          : "border-slate-200 hover:border-slate-300 dark:border-stroke-dark dark:hover:border-slate-600"
+      }`}
+    >
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        {/* Phase label */}
+        {task.phaseLabel && (
+          <span
+            className={`rounded-full border px-2 py-0.5 text-xs font-bold ${phaseStyles[task.phaseLabel] ?? ""}`}
+          >
+            {task.phaseLabel}
+          </span>
+        )}
+        {/* Priority badge */}
+        <span
+          className={`rounded-full border px-2 py-1 text-xs font-bold ${priorityStyles[task.priority]}`}
+        >
+          {task.priority}
+        </span>
+        {/* Story points */}
+        <span className="rounded-full border border-slate-200 bg-white px-2 py-1 text-xs font-bold text-slate-600 dark:border-stroke-dark dark:bg-dark-tertiary dark:text-slate-200">
+          {task.points} pts
+        </span>
+      </div>
+      <h3 className="text-base font-black leading-6">{task.title}</h3>
+      <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+        {task.description}
+      </p>
+      <div
+        className={`mt-4 rounded-md p-3 text-xs font-semibold leading-5 ${
+          isHighRisk
+            ? "bg-rose-50 text-rose-800 dark:bg-rose-950 dark:text-rose-200"
+            : "bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-200"
+        }`}
       >
-        {task.priority}
-      </span>
-      <span className="rounded-full border border-slate-200 bg-white px-2 py-1 text-xs font-bold text-slate-600 dark:border-stroke-dark dark:bg-dark-tertiary dark:text-slate-200">
-        {task.points} pts
-      </span>
-    </div>
-    <h3 className="text-base font-black leading-6">{task.title}</h3>
-    <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-      {task.description}
-    </p>
-    <div className="mt-4 rounded-md bg-amber-50 p-3 text-xs font-semibold leading-5 text-amber-800 dark:bg-amber-950 dark:text-amber-200">
-      {task.risk}
-    </div>
-  </article>
-);
+        {task.risk}
+      </div>
+    </article>
+  );
+};
 
 export default CopilotPage;

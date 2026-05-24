@@ -89,6 +89,7 @@ export interface PlannedTask {
   points: number;
   tags: string;
   risk: string;
+  phaseLabel: "Discovery" | "Execution" | "Launch";
 }
 
 export interface SprintPlan {
@@ -96,6 +97,10 @@ export interface SprintPlan {
   summary: string;
   riskScore: number;
   confidence: string;
+  healthSummary: {
+    riskLevel: "Low" | "Medium" | "High";
+    insight: string;
+  };
   recommendations: string[];
   tasks: PlannedTask[];
 }

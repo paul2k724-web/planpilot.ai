@@ -1,14 +1,13 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import DashboardWrapper from "./dashboardWrapper";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "PlanPilot AI",
+  title: "PlanPilot AI — AI-Powered Project Delivery",
   description:
-    "AI-powered project delivery dashboard for sprint planning, risk tracking, and recruiter-ready product demos.",
+    "AI-powered project delivery dashboard for sprint planning, risk tracking, and recruiter-ready product demos. No AWS or paid AI subscription required.",
 };
 
 export default function RootLayout({
@@ -18,9 +17,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={inter.className}>
-        <DashboardWrapper>{children}</DashboardWrapper>
-      </body>
+      <body className={inter.className}>{children}</body>
     </html>
   );
 }
